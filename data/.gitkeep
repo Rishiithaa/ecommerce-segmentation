@@ -1,0 +1,2 @@
+# This file keeps the data/ directory in version control.
+# Generated CSVs are gitignored — run `python python/generate_data.py` to populate.

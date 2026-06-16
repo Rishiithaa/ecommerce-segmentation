@@ -1,0 +1,39 @@
+name: pipeline
+
+# Smoke-test the analysis pipeline: a fresh checkout must be able to generate
+# the dataset and export the Tableau extracts with no manual setup.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate dataset and run RFM + cohort analysis
+        run: python python/generate_data.py
+
+      - name: Export Tableau extracts
+        run: python python/tableau_prep.py
+
+      - name: Confirm all expected outputs exist
+        run: |
+          set -e
+          for f in customers transactions rfm_scores segment_summary cohort_matrix \
+                   tableau_rfm_customers tableau_cohort_retention \
+                   tableau_monthly_revenue tableau_geo_summary; do
+            test -s "data/$f.csv" || { echo "Missing or empty: data/$f.csv"; exit 1; }
+          done
+          echo "All 9 output files present."
