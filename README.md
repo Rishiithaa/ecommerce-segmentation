@@ -1,6 +1,10 @@
 # E-Commerce Customer Segmentation & Retention Analysis
 
-A complete end-to-end data analytics project analyzing 500,000+ transactions across 37 countries. The system segments customers using an RFM model built on PostgreSQL window functions, identifies at-risk revenue, and reveals cohort retention patterns to directly inform re-engagement campaigns.
+![pipeline](https://github.com/rishiithaa/ecommerce-segmentation/actions/workflows/pipeline.yml/badge.svg)
+![license](https://img.shields.io/badge/license-MIT-green)
+![python](https://img.shields.io/badge/python-3.12-blue)
+
+A complete end-to-end data analytics project analyzing 300,000+ transactions across 37 countries. The system segments customers using an RFM model built on PostgreSQL window functions, identifies at-risk revenue, and reveals cohort retention patterns to directly inform re-engagement campaigns.
 
 **Stack:** PostgreSQL · Python (pandas, numpy) · Tableau · HTML/JS dashboard
 
@@ -10,7 +14,7 @@ A complete end-to-end data analytics project analyzing 500,000+ transactions acr
 
 | Finding | Detail |
 |---|---|
-| **Champion revenue concentration** | Top 8% of customers (Champions) drove **53% of total revenue** ($23.3M) |
+| **Champion revenue concentration** | Top 13% of customers (Champions) drove **53% of total revenue** ($23.3M) |
 | **At-Risk opportunity** | 5,869 customers flagged with **$180K+ recoverable annual revenue** |
 | **Month-3 churn wall** | **81% of customers churn by Month 3** — the critical retention window |
 | **Q4 LTV advantage** | Q4-acquired customers show **2.72× higher LTV** vs Q1 ($1,646 vs $604) |
@@ -48,6 +52,7 @@ ecommerce-segmentation/
 │   └── tableau_setup.md           # Tableau worksheet-by-worksheet build guide
 │
 ├── requirements.txt
+├── LICENSE
 └── README.md
 ```
 
@@ -74,7 +79,7 @@ pip install -r requirements.txt
 python python/generate_data.py
 ```
 
-This generates 500K+ transactions across 37 countries, runs the full RFM segmentation pipeline, and prints a segment summary to the terminal.
+This generates 300K+ transactions across 37 countries, runs the full RFM segmentation pipeline, and prints a segment summary to the terminal.
 
 ### 4. Export Tableau-ready CSVs
 
@@ -202,10 +207,10 @@ See [`docs/tableau_setup.md`](docs/tableau_setup.md) for complete worksheet-by-w
 ## Results & Business Impact
 
 **Revenue concentration discovery:**
-The NTILE(5) RFM model revealed that Champions (top-scoring 8% of customers) generate 53% of all revenue. This justified reallocating 30% of the marketing budget toward Champion retention programs (VIP tier, early access, referral incentives).
+The NTILE(5) RFM model revealed that Champions (top-scoring 13% of customers) generate 53% of all revenue. This justified reallocating 30% of the marketing budget toward Champion retention programs (VIP tier, early access, referral incentives).
 
 **At-Risk intervention:**
-4,300+ customers were flagged as At-Risk using composite RFM scoring. A targeted 3-email winback sequence was deployed, with recoverable revenue modeled at $180K annually at a conservative 5% re-engagement rate.
+5,869 customers were flagged as At-Risk using composite RFM scoring. A targeted 3-email winback sequence was deployed, with recoverable revenue modeled at $180K annually at a conservative 5% re-engagement rate.
 
 **Cohort insights → campaign timing:**
 The Month-3 churn wall (81% lost by Month 3) identified the optimal window for re-engagement: a Day-45 trigger email deployed before the customer reaches inactivity. The Q4 LTV finding (2.72×) shifted acquisition budget toward October–December campaigns.
