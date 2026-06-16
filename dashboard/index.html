@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Commerce Customer Segmentation & Retention Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117;
+    --bg2: #1a1d27;
+    --bg3: #222535;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8eaf0;
+    --text2: #8b90a8;
+    --text3: #565b74;
+    --purple: #7c6edb;
+    --purple-l: #a49af0;
+    --teal: #3ecf8e;
+    --teal-l: #6edba8;
+    --coral: #f0724e;
+    --coral-l: #f5967a;
+    --amber: #f0b429;
+    --amber-l: #f5c959;
+    --blue: #4d9ef0;
+    --blue-l: #80baf5;
+    --pink: #d45fb5;
+    --gray: #5a5f78;
+    --gray-l: #8b90a8;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .header-left p {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+  .header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .badge {
+    background: rgba(124,110,219,0.15);
+    border: 1px solid rgba(124,110,219,0.3);
+    color: var(--purple-l);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .badge.teal { background: rgba(62,207,142,0.1); border-color: rgba(62,207,142,0.25); color: var(--teal); }
+
+  /* ── Nav tabs ── */
+  .nav {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    gap: 4px;
+  }
+  .nav-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--purple-l); border-bottom-color: var(--purple); }
+
+  /* ── Main layout ── */
+  .main { padding: 28px 32px; max-width: 1400px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── KPI row ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .kpi {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi.purple::before { background: var(--purple); }
+  .kpi.teal::before   { background: var(--teal); }
+  .kpi.coral::before  { background: var(--coral); }
+  .kpi.amber::before  { background: var(--amber); }
+  .kpi-label { font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+  .kpi-sub   { font-size: 11px; color: var(--text2); margin-top: 6px; }
+  .kpi-sub .up   { color: var(--teal); }
+  .kpi-sub .down { color: var(--coral); }
+
+  /* ── Grid layouts ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-full { margin-bottom: 20px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-sub {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 18px;
+  }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* ── Segment table ── */
+  .seg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .seg-table th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .seg-table th:not(:first-child) { text-align: right; }
+  .seg-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    vertical-align: middle;
+  }
+  .seg-table td:not(:first-child) { text-align: right; }
+  .seg-table tr:last-child td { border-bottom: none; }
+  .seg-table tr:hover td { background: rgba(255,255,255,0.025); }
+  .seg-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+  /* ── Revenue bar ── */
+  .rev-bar-wrap { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .rev-bar-label { font-size: 11px; color: var(--text2); width: 50px; text-align: right; flex-shrink: 0; }
+  .rev-bar-track { flex: 1; background: var(--bg3); border-radius: 3px; height: 6px; }
+  .rev-bar-fill  { height: 6px; border-radius: 3px; }
+  .rev-bar-val   { font-size: 11px; color: var(--text2); width: 64px; flex-shrink: 0; }
+
+  /* ── Cohort heatmap ── */
+  .cohort-table { width: 100%; border-collapse: collapse; font-size: 11px; overflow-x: auto; display: block; }
+  .cohort-table th, .cohort-table td { padding: 5px 8px; text-align: center; min-width: 48px; }
+  .cohort-table th { color: var(--text3); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
+  .cohort-table td.label { text-align: left; color: var(--text2); min-width: 72px; }
+  .cohort-cell {
+    border-radius: 4px;
+    font-weight: 500;
+    display: block;
+    padding: 4px 0;
+  }
+
+  /* ── Insight cards ── */
+  .insight-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
+  .insight {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .insight-icon { font-size: 20px; margin-bottom: 8px; }
+  .insight-num { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .insight-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .insight.purple .insight-num { color: var(--purple-l); }
+  .insight.teal   .insight-num { color: var(--teal); }
+  .insight.coral  .insight-num { color: var(--coral-l); }
+  .insight.amber  .insight-num { color: var(--amber); }
+
+  /* ── Country bars ── */
+  .country-row { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+  .country-flag { font-size: 15px; width: 20px; }
+  .country-name { font-size: 12px; color: var(--text2); width: 26px; }
+  .country-track { flex: 1; background: var(--bg3); border-radius: 2px; height: 5px; }
+  .country-fill  { height: 5px; border-radius: 2px; background: var(--purple); }
+  .country-val   { font-size: 11px; color: var(--text2); min-width: 60px; text-align: right; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 40px;
+    padding: 20px 32px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Customer Segmentation &amp; Retention</h1>
+    <p>500K+ transactions · 37 countries · Jan 2021 – Dec 2023</p>
+  </div>
+  <div class="header-right">
+    <span class="badge">RFM Model</span>
+    <span class="badge teal">PostgreSQL · Python · Tableau</span>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-tab active" onclick="showSection('overview',this)">Overview</div>
+  <div class="nav-tab" onclick="showSection('rfm',this)">RFM Segmentation</div>
+  <div class="nav-tab" onclick="showSection('cohort',this)">Cohort Retention</div>
+  <div class="nav-tab" onclick="showSection('atrisk',this)">At-Risk Analysis</div>
+  <div class="nav-tab" onclick="showSection('geo',this)">Geographic</div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════
+     OVERVIEW
+═══════════════════════════════════════════ -->
+<div id="overview" class="section active">
+
+  <div class="kpi-row">
+    <div class="kpi purple">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">$43.9M</div>
+      <div class="kpi-sub">Across <span class="up">45,000</span> customers</div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">Total Transactions</div>
+      <div class="kpi-value">305,784</div>
+      <div class="kpi-sub">37 countries</div>
+    </div>
+    <div class="kpi coral">
+      <div class="kpi-label">At-Risk Revenue</div>
+      <div class="kpi-value">$180K</div>
+      <div class="kpi-sub"><span class="down">4,300+</span> customers flagged</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Champion LTV</div>
+      <div class="kpi-value">$4,010</div>
+      <div class="kpi-sub"><span class="up">8% of customers → 53% revenue</span></div>
+    </div>
+  </div>
+
+  <div class="insight-row">
+    <div class="insight purple">
+      <div class="insight-num">53%</div>
+      <div class="insight-text">of total revenue is driven by the top 8% Champion segment — 5,804 customers</div>
+    </div>
+    <div class="insight teal">
+      <div class="insight-num">2.72×</div>
+      <div class="insight-text">higher lifetime value for Q4-acquired customers vs. Q1 cohort ($1,646 vs $604 avg LTV)</div>
+    </div>
+    <div class="insight coral">
+      <div class="insight-num">81%</div>
+      <div class="insight-text">churn by Month 3 — only 18.8% of customers make a purchase in their third month</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Revenue by segment</div>
+      <div class="card-sub">NTILE(5) RFM scoring · 9 segments</div>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="overviewRevChart" role="img" aria-label="Horizontal bar chart showing revenue by customer segment, Champion leads with $23.3M">Revenue by segment: Champion $23.3M, Loyal Customer $10.8M, At-Risk $3.5M</canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Customer distribution</div>
+      <div class="card-sub">Share of customers per segment</div>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="overviewDistChart" role="img" aria-label="Donut chart showing customer distribution across RFM segments">Customer segments: Loyal Customer 23.7%, Champion 12.9%, Lost 14.7%</canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card grid-full">
+    <div class="card-title">Average LTV by acquisition quarter</div>
+    <div class="card-sub">Q4 cohorts show 2.72× higher LTV — driven by holiday-season buyers who return year-round</div>
+    <div class="chart-wrap" style="height:200px;">
+      <canvas id="qLtvChart" role="img" aria-label="Bar chart comparing average LTV by acquisition quarter, Q4 is highest at $1,646">LTV: Q1 $604, Q2 $585, Q3 $685, Q4 $1,646</canvas>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     RFM SEGMENTATION
+═══════════════════════════════════════════ -->
+<div id="rfm" class="section">
+
+  <div class="kpi-row">
+    <div class="kpi purple">
+      <div class="kpi-label">Segments Identified</div>
+      <div class="kpi-value">9</div>
+      <div class="kpi-sub">Via NTILE(5) window functions</div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">Champion Revenue Share</div>
+      <div class="kpi-value">53%</div>
+      <div class="kpi-sub">5,804 customers</div>
+    </div>
+    <div class="kpi coral">
+      <div class="kpi-label">Avg Champion LTV</div>
+      <div class="kpi-value">$4,010</div>
+      <div class="kpi-sub">vs $975 overall avg</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Loyal + Champion</div>
+      <div class="kpi-value">77.6%</div>
+      <div class="kpi-sub">of total revenue</div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Segment scorecard</div>
+      <div class="card-sub">Ranked by total revenue</div>
+      <table class="seg-table">
+        <thead>
+          <tr>
+            <th>Segment</th>
+            <th>Customers</th>
+            <th>% Cust.</th>
+            <th>Revenue</th>
+            <th>% Rev.</th>
+            <th>Avg LTV</th>
+          </tr>
+        </thead>
+        <tbody id="segTableBody"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Revenue concentration</div>
+      <div class="card-sub">% of total by segment</div>
+      <div id="revBars"></div>
+    </div>
+  </div>
+
+  <div class="card grid-full">
+    <div class="card-title">RFM score distribution</div>
+    <div class="card-sub">Bubble size = number of customers · Position = Recency (x) vs Frequency (y) · Color = Monetary quintile</div>
+    <div class="chart-wrap" style="height:320px;">
+      <canvas id="rfmBubbleChart" role="img" aria-label="Bubble scatter chart showing RFM scores, Champions cluster at high recency and frequency">RFM bubble chart: Champions at R5-F5, Lost customers at R1-F1</canvas>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     COHORT RETENTION
+═══════════════════════════════════════════ -->
+<div id="cohort" class="section">
+
+  <div class="kpi-row">
+    <div class="kpi purple">
+      <div class="kpi-label">Month-1 Retention</div>
+      <div class="kpi-value">21.1%</div>
+      <div class="kpi-sub"><span class="down">78.9% lost after first purchase</span></div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">Month-3 Retention</div>
+      <div class="kpi-value">18.8%</div>
+      <div class="kpi-sub"><span class="down">81.2% churn by month 3</span></div>
+    </div>
+    <div class="kpi coral">
+      <div class="kpi-label">Month-12 Retention</div>
+      <div class="kpi-value">14.6%</div>
+      <div class="kpi-sub">Long-tail loyal base</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Q4 vs Q1 LTV</div>
+      <div class="kpi-value">2.72×</div>
+      <div class="kpi-sub">$1,646 vs $604 average</div>
+    </div>
+  </div>
+
+  <div class="card grid-full">
+    <div class="card-title">Retention curve — average across all cohorts (months 0–12)</div>
+    <div class="card-sub">Steepest drop occurs between Month 0 → Month 1. Month 3 marks the "critical retention window."</div>
+    <div class="chart-wrap" style="height:260px;">
+      <canvas id="retentionCurveChart" role="img" aria-label="Line chart showing average monthly retention rate declining from 100% at month 0 to 14.6% at month 12">Retention: M0 100%, M1 21.1%, M3 18.8%, M12 14.6%</canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Cohort retention heatmap (2021–2022)</div>
+      <div class="card-sub">Each row = acquisition cohort · Columns = months since first purchase · Darker = higher retention</div>
+      <div style="overflow-x: auto;">
+        <table class="cohort-table" id="cohortHeatmap"></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">LTV by acquisition quarter</div>
+      <div class="card-sub">Q4 buyers spend 2.72× more over lifetime</div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="qLtvChart2" role="img" aria-label="Bar chart showing average customer LTV by acquisition quarter">Q1 $604, Q2 $585, Q3 $685, Q4 $1,646</canvas>
+      </div>
+      <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);">
+        <div style="font-size: 11px; color: var(--text2); line-height: 1.7;">
+          <strong style="color: var(--teal); font-size:12px;">Why Q4?</strong><br>
+          Holiday-season buyers typically have higher intent, make larger first orders, and are acquired via promotions that encourage repeat purchase. The data shows they remain active across Q1–Q3 of the following year, compounding their LTV advantage.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     AT-RISK ANALYSIS
+═══════════════════════════════════════════ -->
+<div id="atrisk" class="section">
+
+  <div class="kpi-row">
+    <div class="kpi coral">
+      <div class="kpi-label">At-Risk Customers</div>
+      <div class="kpi-value">5,869</div>
+      <div class="kpi-sub">13% of total customer base</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Historical Spend</div>
+      <div class="kpi-value">$3.52M</div>
+      <div class="kpi-sub">Avg $600 per customer</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">Recoverable Revenue</div>
+      <div class="kpi-value">~$180K</div>
+      <div class="kpi-sub">Per re-engagement campaign</div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">Avg Recency</div>
+      <div class="kpi-value">420+ days</div>
+      <div class="kpi-sub">Since last purchase</div>
+    </div>
+  </div>
+
+  <div class="card grid-full" style="margin-bottom:20px;">
+    <div class="card-title">At-Risk vs other segments — revenue &amp; recency profile</div>
+    <div class="card-sub">At-Risk customers have high historical spend but long recency — the highest-ROI re-engagement target</div>
+    <div class="chart-wrap" style="height:260px;">
+      <canvas id="atRiskChart" role="img" aria-label="Scatter chart comparing average recency vs average LTV across customer segments, At-Risk cluster shows high LTV but long recency">Scatter: Champions low recency high LTV, At-Risk high recency moderate LTV</canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Re-engagement strategy by sub-group</div>
+      <div class="card-sub">Prioritize by estimated recoverable revenue</div>
+      <table class="seg-table">
+        <thead>
+          <tr>
+            <th>Profile</th>
+            <th>Customers</th>
+            <th>Avg LTV</th>
+            <th>Recommended Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="seg-pill" style="background:rgba(240,114,78,.12);color:var(--coral-l)"><span class="dot" style="background:var(--coral)"></span>High-value lapsed</span></td>
+            <td>1,240</td>
+            <td>$1,120</td>
+            <td style="color:var(--text2)">VIP winback email + 20% offer</td>
+          </tr>
+          <tr>
+            <td><span class="seg-pill" style="background:rgba(240,180,41,.1);color:var(--amber-l)"><span class="dot" style="background:var(--amber)"></span>Moderate-value</span></td>
+            <td>2,890</td>
+            <td>$490</td>
+            <td style="color:var(--text2)">Targeted push + product rec</td>
+          </tr>
+          <tr>
+            <td><span class="seg-pill" style="background:rgba(138,144,168,.1);color:var(--gray-l)"><span class="dot" style="background:var(--gray)"></span>Low-value lapsed</span></td>
+            <td>1,739</td>
+            <td>$180</td>
+            <td style="color:var(--text2)">Low-cost SMS + sunset if no open</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Recovery revenue forecast</div>
+      <div class="card-sub">Assuming 5% / 8% / 12% re-engagement rate scenarios</div>
+      <div class="chart-wrap" style="height: 200px;">
+        <canvas id="recoveryChart" role="img" aria-label="Bar chart showing revenue recovery scenarios at 5%, 8%, and 12% re-engagement rates">5% rate: $176K, 8%: $282K, 12%: $422K</canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     GEOGRAPHIC
+═══════════════════════════════════════════ -->
+<div id="geo" class="section">
+
+  <div class="kpi-row">
+    <div class="kpi purple">
+      <div class="kpi-label">Countries</div>
+      <div class="kpi-value">37</div>
+      <div class="kpi-sub">Global footprint</div>
+    </div>
+    <div class="kpi teal">
+      <div class="kpi-label">US Revenue</div>
+      <div class="kpi-value">$13.5M</div>
+      <div class="kpi-sub">30.7% of total</div>
+    </div>
+    <div class="kpi coral">
+      <div class="kpi-label">Top 3 Markets</div>
+      <div class="kpi-value">49%</div>
+      <div class="kpi-sub">US + UK + DE</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">APAC Revenue</div>
+      <div class="kpi-value">$5.6M</div>
+      <div class="kpi-sub">JP + AU + IN + SG</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Revenue by country — top 10</div>
+      <div class="card-sub">Normalized to US market</div>
+      <div id="countryBars" style="margin-top: 6px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Revenue share by region</div>
+      <div class="card-sub">Americas · Europe · APAC · Other</div>
+      <div class="chart-wrap" style="height:260px;">
+        <canvas id="geoChart" role="img" aria-label="Donut chart showing revenue share by geographic region, Americas leads with 52%">Americas 52%, Europe 38%, APAC 10%</canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card grid-full">
+    <div class="card-title">Revenue vs Customer count by country</div>
+    <div class="card-sub">Bubble size = number of customers · Countries above the diagonal have higher avg LTV</div>
+    <div class="chart-wrap" style="height:280px;">
+      <canvas id="geoScatterChart" role="img" aria-label="Bubble chart of revenue vs customer count by country">US largest bubble, UK second, then European markets</canvas>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<div class="footer">
+  <span>E-Commerce Segmentation Analysis · PostgreSQL · Python · 2021–2023</span>
+  <span>github.com/yourusername/ecommerce-segmentation</span>
+</div>
+
+<script>
+Chart.defaults.color = '#8b90a8';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 12;
+
+const SEG_DATA = [
+  {segment:"Champion",         customers:5804,  pct_cust:12.9, revenue:23272088, pct_rev:53.01, avg_ltv:4010, avg_recency:3,   color:"#7c6edb"},
+  {segment:"Loyal Customer",   customers:10685, pct_cust:23.7, revenue:10801318, pct_rev:24.61, avg_ltv:1011, avg_recency:88,  color:"#3ecf8e"},
+  {segment:"At-Risk",          customers:5869,  pct_cust:13.0, revenue:3524196,  pct_rev:8.03,  avg_ltv:600,  avg_recency:420, color:"#f0724e"},
+  {segment:"Potential Loyalist",customers:4779, pct_cust:10.6, revenue:2309905,  pct_rev:5.26,  avg_ltv:483,  avg_recency:45,  color:"#4d9ef0"},
+  {segment:"Promising",        customers:4243,  pct_cust:9.4,  revenue:1309219,  pct_rev:2.98,  avg_ltv:309,  avg_recency:95,  color:"#f0b429"},
+  {segment:"Lost",             customers:6602,  pct_cust:14.7, revenue:978867,   pct_rev:2.23,  avg_ltv:148,  avg_recency:650, color:"#5a5f78"},
+  {segment:"Hibernating",      customers:3543,  pct_cust:7.9,  revenue:764384,   pct_rev:1.74,  avg_ltv:216,  avg_recency:500, color:"#5a5f78"},
+  {segment:"New Customer",     customers:3013,  pct_cust:6.7,  revenue:731661,   pct_rev:1.67,  avg_ltv:243,  avg_recency:20,  color:"#d45fb5"},
+  {segment:"Need Attention",   customers:462,   pct_cust:1.0,  revenue:206641,   pct_rev:0.47,  avg_ltv:447,  avg_recency:180, color:"#f0b429"},
+];
+
+const COHORT_RETENTION = [100,21.1,19.9,18.8,17.5,17.2,16.8,16.0,16.0,15.3,15.1,14.3,14.6];
+
+const COHORT_ROWS = [
+  {month:"Jan 2021", data:[100,17.2,14.1,17.2,12.5,10.9,17.2,9.4,12.5,7.8,15.6,12.5,15.6]},
+  {month:"Feb 2021", data:[100,13.5,14.7,9.2, 10.4,12.3,13.5,11.0,14.1,16.6,14.7,7.4, 10.4]},
+  {month:"Mar 2021", data:[100,13.9,15.5,11.3,12.0,12.9,12.9,13.2,11.8,14.5,13.0,15.0,12.5]},
+  {month:"Apr 2021", data:[100,13.7,12.2,14.2,12.9,12.2,11.4,14.8,13.3,11.1,15.2,12.1,14.3]},
+  {month:"May 2021", data:[100,13.1,10.6,11.7,9.6, 11.6,11.9,10.3,17.5,13.8,14.9,16.2,15.0]},
+  {month:"Jun 2021", data:[100,9.9, 11.8,12.1,12.7,13.4,10.7,15.5,12.2,14.8,11.0,13.3,16.1]},
+  {month:"Jul 2021", data:[100,22.3,18.1,20.5,16.4,15.8,17.0,14.1,16.0,13.9,14.5,12.8,null]},
+  {month:"Aug 2021", data:[100,24.1,21.5,19.8,18.7,17.3,16.2,15.5,14.8,14.1,13.9,null,null]},
+  {month:"Sep 2021", data:[100,20.8,18.5,17.2,16.9,15.8,15.5,14.9,14.2,13.5,null,null,null]},
+  {month:"Oct 2021", data:[100,23.5,21.0,19.5,17.8,17.0,16.5,15.8,14.5,null,null,null,null]},
+  {month:"Nov 2021", data:[100,28.4,24.1,22.5,20.8,19.2,18.5,17.2,null,null,null,null,null]},
+  {month:"Dec 2021", data:[100,31.2,27.8,25.5,23.1,21.4,20.0,null,null,null,null,null,null]},
+];
+
+function fmt(n) { return '$'+Math.round(n).toLocaleString(); }
+function fmtM(n) { return '$'+(n/1e6).toFixed(1)+'M'; }
+
+// ── Nav ──
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Overview charts ──
+new Chart(document.getElementById('overviewRevChart'), {
+  type: 'bar',
+  data: {
+    labels: SEG_DATA.map(d=>d.segment),
+    datasets: [{
+      label: 'Revenue',
+      data: SEG_DATA.map(d=>d.revenue),
+      backgroundColor: SEG_DATA.map(d=>d.color+'99'),
+      borderColor: SEG_DATA.map(d=>d.color),
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { callback: v => fmtM(v) }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+new Chart(document.getElementById('overviewDistChart'), {
+  type: 'doughnut',
+  data: {
+    labels: SEG_DATA.map(d=>d.segment),
+    datasets: [{
+      data: SEG_DATA.map(d=>d.customers),
+      backgroundColor: SEG_DATA.map(d=>d.color+'cc'),
+      borderColor: '#1a1d27',
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { font: { size: 11 }, boxWidth: 10, padding: 10 }
+      }
+    }
+  }
+});
+
+function drawQLtv(canvasId) {
+  new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels: ['Q1 (Jan–Mar)','Q2 (Apr–Jun)','Q3 (Jul–Sep)','Q4 (Oct–Dec)'],
+      datasets: [{
+        label: 'Avg LTV',
+        data: [604, 585, 685, 1646],
+        backgroundColor: ['#7c6edb66','#3ecf8e66','#4d9ef066','#f0b42999'],
+        borderColor:   ['#7c6edb','#3ecf8e','#4d9ef0','#f0b429'],
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.raw) } }
+      },
+      scales: {
+        y: { ticks: { callback: v => fmt(v) }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+drawQLtv('qLtvChart');
+
+// ── RFM segment table ──
+const tbody = document.getElementById('segTableBody');
+SEG_DATA.forEach(d => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><span class="seg-pill" style="background:${d.color}22;color:${d.color}">
+      <span class="dot" style="background:${d.color}"></span>${d.segment}</span></td>
+    <td>${d.customers.toLocaleString()}</td>
+    <td>${d.pct_cust}%</td>
+    <td>${fmtM(d.revenue)}</td>
+    <td><strong style="color:${d.color}">${d.pct_rev}%</strong></td>
+    <td>${fmt(d.avg_ltv)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// ── Revenue bars ──
+const maxRev = SEG_DATA[0].revenue;
+const revBarsEl = document.getElementById('revBars');
+SEG_DATA.forEach(d => {
+  const pct = (d.revenue / maxRev * 100).toFixed(1);
+  revBarsEl.innerHTML += `
+    <div class="rev-bar-wrap">
+      <div class="rev-bar-label" style="color:${d.color};font-size:10px;">${d.segment.split(' ')[0]}</div>
+      <div class="rev-bar-track">
+        <div class="rev-bar-fill" style="width:${pct}%;background:${d.color};"></div>
+      </div>
+      <div class="rev-bar-val">${d.pct_rev}%</div>
+    </div>`;
+});
+
+// ── RFM bubble ──
+new Chart(document.getElementById('rfmBubbleChart'), {
+  type: 'bubble',
+  data: {
+    datasets: SEG_DATA.map(d => ({
+      label: d.segment,
+      data: [{
+        x: d.avg_recency > 0 ? Math.max(3, 400 - d.avg_recency * 0.5) : 350,
+        y: d.avg_ltv / 150,
+        r: Math.sqrt(d.customers) * 0.4
+      }],
+      backgroundColor: d.color+'88',
+      borderColor: d.color,
+      borderWidth: 1,
+    }))
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    layout: { padding: 20 },
+    scales: {
+      x: { title: { display: true, text: 'Recency score (higher = more recent)', color: '#8b90a8' }, min:0, max:400, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { title: { display: true, text: 'Relative LTV', color: '#8b90a8' }, min:0, max:30, grid: { color: 'rgba(255,255,255,0.05)' } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+// ── Cohort retention curve ──
+new Chart(document.getElementById('retentionCurveChart'), {
+  type: 'line',
+  data: {
+    labels: COHORT_RETENTION.map((_,i)=>'M'+i),
+    datasets: [{
+      label: 'Retention %',
+      data: COHORT_RETENTION,
+      borderColor: '#7c6edb',
+      backgroundColor: 'rgba(124,110,219,0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointBackgroundColor: '#7c6edb',
+      borderWidth: 2,
+    },{
+      label: 'Critical window',
+      data: [null,null,null,18.8,null,null,null,null,null,null,null,null,null],
+      pointRadius: 8,
+      pointBackgroundColor: '#f0724e',
+      pointBorderColor: '#f0724e',
+      showLine: false,
+      borderColor: 'transparent',
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      y: { min: 0, max: 110, ticks: { callback: v => v+'%' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      x: { grid: { color: 'rgba(255,255,255,0.03)' } }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' '+ctx.raw+'%' } }
+    }
+  }
+});
+
+// ── Cohort heatmap ──
+function heatColor(val) {
+  if (val === null) return 'transparent';
+  const r = Math.round(25 + (255-25) * (1 - val/100));
+  const g = Math.round(170 + (255-170) * (val/100));
+  const b = Math.round(90 + (160-90) * (val/100));
+  return `rgba(${r},${g},${b},0.35)`;
+}
+const ht = document.getElementById('cohortHeatmap');
+let header = '<thead><tr><th style="text-align:left">Cohort</th>';
+for(let i=0;i<=12;i++) header += `<th>M${i}</th>`;
+header += '</tr></thead><tbody>';
+let body = '';
+COHORT_ROWS.forEach(row => {
+  body += `<tr><td class="label">${row.month}</td>`;
+  row.data.forEach((v,i) => {
+    const bg = heatColor(v);
+    const fc = v === null ? '' : (v > 25 ? '#3ecf8e' : v > 15 ? '#f0b429' : '#f0724e');
+    body += `<td><span class="cohort-cell" style="background:${bg};color:${fc}">${v === null ? '—' : v.toFixed(1)+'%'}</span></td>`;
+  });
+  body += '</tr>';
+});
+ht.innerHTML = header + body + '</tbody>';
+
+// Q LTV chart 2
+drawQLtv('qLtvChart2');
+
+// ── At-Risk scatter ──
+new Chart(document.getElementById('atRiskChart'), {
+  type: 'bubble',
+  data: {
+    datasets: SEG_DATA.map(d => ({
+      label: d.segment,
+      data: [{ x: d.avg_recency, y: d.avg_ltv, r: 10 }],
+      backgroundColor: d.segment === 'At-Risk' ? '#f0724ecc' : d.color+'66',
+      borderColor: d.color,
+      borderWidth: d.segment === 'At-Risk' ? 2 : 1,
+    }))
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    layout: { padding: 20 },
+    scales: {
+      x: { title: { display: true, text: 'Avg. days since last purchase (recency)', color: '#8b90a8' }, min: -20, max: 720, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { title: { display: true, text: 'Avg. LTV ($)', color: '#8b90a8' }, min: 0, max: 4500, ticks: { callback: v => fmt(v) }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw.y)} LTV, ${ctx.raw.x}d recency` } }
+    }
+  }
+});
+
+// ── Recovery scenarios ──
+new Chart(document.getElementById('recoveryChart'), {
+  type: 'bar',
+  data: {
+    labels: ['5% re-engagement','8% re-engagement','12% re-engagement'],
+    datasets: [{
+      label: 'Recoverable Revenue',
+      data: [176210, 281936, 422904],
+      backgroundColor: ['#7c6edb66','#3ecf8e66','#f0b42999'],
+      borderColor: ['#7c6edb','#3ecf8e','#f0b429'],
+      borderWidth: 1, borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.raw) } }
+    },
+    scales: {
+      y: { ticks: { callback: v => fmt(v) }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── Country bars ──
+const COUNTRIES = [
+  {flag:'🇺🇸',code:'US',rev:13484970},
+  {flag:'🇬🇧',code:'GB',rev:4585467},
+  {flag:'🇩🇪',code:'DE',rev:3506836},
+  {flag:'🇫🇷',code:'FR',rev:2793545},
+  {flag:'🇨🇦',code:'CA',rev:2304927},
+  {flag:'🇯🇵',code:'JP',rev:1833074},
+  {flag:'🇦🇺',code:'AU',rev:1813501},
+  {flag:'🇧🇷',code:'BR',rev:1585695},
+  {flag:'🇮🇳',code:'IN',rev:1470882},
+  {flag:'🇲🇽',code:'MX',rev:986857},
+];
+const maxC = COUNTRIES[0].rev;
+const cbEl = document.getElementById('countryBars');
+COUNTRIES.forEach(c => {
+  const pct = (c.rev/maxC*100).toFixed(1);
+  cbEl.innerHTML += `
+    <div class="country-row">
+      <span class="country-flag">${c.flag}</span>
+      <span class="country-name">${c.code}</span>
+      <div class="country-track"><div class="country-fill" style="width:${pct}%"></div></div>
+      <span class="country-val">${fmtM(c.rev)}</span>
+    </div>`;
+});
+
+// ── Region donut ──
+new Chart(document.getElementById('geoChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Americas','Europe','APAC','Other'],
+    datasets: [{
+      data: [52, 38, 10, 0],
+      backgroundColor: ['#7c6edb99','#3ecf8e99','#4d9ef099','#f0b42999'],
+      borderColor: '#1a1d27', borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '55%',
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10, padding: 12 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}%` } }
+    }
+  }
+});
+
+// ── Geo scatter ──
+const GEO_SCATTER = [
+  {country:'US', customers:13603, revenue:13484970, color:'#7c6edb'},
+  {country:'GB', customers:4864,  revenue:4585467,  color:'#3ecf8e'},
+  {country:'DE', customers:3475,  revenue:3506836,  color:'#3ecf8e'},
+  {country:'FR', customers:2963,  revenue:2793545,  color:'#3ecf8e'},
+  {country:'CA', customers:2365,  revenue:2304927,  color:'#7c6edb'},
+  {country:'JP', customers:1899,  revenue:1833074,  color:'#4d9ef0'},
+  {country:'AU', customers:1934,  revenue:1813501,  color:'#4d9ef0'},
+  {country:'BR', customers:1463,  revenue:1585695,  color:'#7c6edb'},
+  {country:'IN', customers:1466,  revenue:1470882,  color:'#4d9ef0'},
+  {country:'MX', customers:998,   revenue:986857,   color:'#7c6edb'},
+];
+new Chart(document.getElementById('geoScatterChart'), {
+  type: 'bubble',
+  data: {
+    datasets: GEO_SCATTER.map(d => ({
+      label: d.country,
+      data: [{ x: d.customers, y: d.revenue/1e6, r: Math.sqrt(d.customers)/4 }],
+      backgroundColor: d.color+'88',
+      borderColor: d.color, borderWidth: 1,
+    }))
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    layout: { padding: 20 },
+    scales: {
+      x: { title: { display: true, text: 'Number of customers', color: '#8b90a8' }, min: 0, max: 16000, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { title: { display: true, text: 'Revenue ($M)', color: '#8b90a8' }, min: 0, max: 16, ticks: { callback: v => '$'+v+'M' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    },
+    plugins: {
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: $${ctx.raw.y.toFixed(1)}M, ${ctx.raw.x.toLocaleString()} customers` } }
+    }
+  }
+});
+</script>
+</body>
+</html>
