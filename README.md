@@ -179,7 +179,8 @@ This assumes 3 months of re-engagement and that each re-engaged transaction matc
 
 ## Dashboard Overview
 
-The interactive HTML dashboard (`dashboard/index.html`) has five sections:
+Open `dashboard/index.html` in any browser — no server or build step required.
+It has five sections:
 
 | Section | Charts | Key Metric |
 |---|---|---|
@@ -188,6 +189,15 @@ The interactive HTML dashboard (`dashboard/index.html`) has five sections:
 | **Cohort Retention** | Retention curve, cohort heatmap, LTV by quarter | 81% churn by Month 3 |
 | **At-Risk Analysis** | Recency vs LTV scatter, recovery scenarios, sub-segment table | $180K recoverable |
 | **Geographic** | Country revenue bars, region donut, revenue vs LTV scatter | 37 countries |
+
+<!-- Adding screenshots makes this repo land harder at a glance. To enable them:
+     1. Open dashboard/index.html in your browser and maximize the window.
+     2. Screenshot each tab into docs/screenshots/ with these filenames.
+     3. Delete the two comment markers around the block below so it renders.
+
+![Overview tab](docs/screenshots/overview.png)
+![Cohort retention tab](docs/screenshots/cohort.png)
+-->
 
 ---
 
