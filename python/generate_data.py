@@ -1,7 +1,7 @@
 """
 generate_data.py
 ================
-Generates a realistic synthetic e-commerce dataset of 500,000+ transactions
+Generates a realistic synthetic e-commerce dataset of 300,000+ transactions
 across 37 countries, then runs the full RFM + Cohort analysis pipeline in pandas.
 
 Outputs:
@@ -12,6 +12,8 @@ Outputs:
     data/segment_summary.csv
 """
 
+import os
+import sys
 import numpy as np
 import pandas as pd
 from datetime import date, timedelta
@@ -23,9 +25,19 @@ warnings.filterwarnings("ignore")
 np.random.seed(42)
 random.seed(42)
 
+# Print UTF-8 cleanly even on consoles that default to a legacy codec (e.g.
+# Windows cp1252), so the script never dies on a stray arrow or check mark.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+# Resolve paths relative to the repo root, not the caller's cwd, and make sure
+# the output directory exists so a fresh clone runs without manual setup.
+ROOT     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(ROOT, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
 # ─── Config ───────────────────────────────────────────────
 N_CUSTOMERS   = 45_000
-N_TRANSACTIONS = 520_000
 START_DATE    = date(2021, 1, 1)
 END_DATE      = date(2023, 12, 31)
 DATE_RANGE    = (END_DATE - START_DATE).days
@@ -232,9 +244,9 @@ if 1 in q_ltv and 4 in q_ltv:
 
 # ─── Save outputs ─────────────────────────────────────────
 print("\nSaving CSVs...")
-customers_df.to_csv("data/customers.csv", index=False)
-txn_df.to_csv("data/transactions.csv", index=False)
-rfm.to_csv("data/rfm_scores.csv", index=False)
-seg_summary.to_csv("data/segment_summary.csv", index=False)
-retention_matrix.to_csv("data/cohort_matrix.csv")
-print("Done. ✓")
+customers_df.to_csv(os.path.join(DATA_DIR, "customers.csv"), index=False)
+txn_df.to_csv(os.path.join(DATA_DIR, "transactions.csv"), index=False)
+rfm.to_csv(os.path.join(DATA_DIR, "rfm_scores.csv"), index=False)
+seg_summary.to_csv(os.path.join(DATA_DIR, "segment_summary.csv"), index=False)
+retention_matrix.to_csv(os.path.join(DATA_DIR, "cohort_matrix.csv"))
+print("Done.")

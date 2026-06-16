@@ -11,15 +11,36 @@ Outputs four Tableau-ready CSVs:
     data/tableau_geo_summary.csv        — country-level aggregates
 """
 
+import os
+import sys
 import pandas as pd
 import numpy as np
 from datetime import date, timedelta
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+ROOT     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(ROOT, "data")
+
+
+def data_path(name):
+    return os.path.join(DATA_DIR, name)
+
+
 print("Loading source data...")
-customers = pd.read_csv("data/customers.csv", parse_dates=["signup_date"])
-txn       = pd.read_csv("data/transactions.csv", parse_dates=["transaction_date"])
-rfm       = pd.read_csv("data/rfm_scores.csv")
-coh_mat   = pd.read_csv("data/cohort_matrix.csv")
+required = ["customers.csv", "transactions.csv", "rfm_scores.csv", "cohort_matrix.csv"]
+missing = [f for f in required if not os.path.exists(data_path(f))]
+if missing:
+    sys.exit(
+        f"Missing source files: {', '.join(missing)}\n"
+        "Run `python python/generate_data.py` first."
+    )
+
+customers = pd.read_csv(data_path("customers.csv"), parse_dates=["signup_date"])
+txn       = pd.read_csv(data_path("transactions.csv"), parse_dates=["transaction_date"])
+rfm       = pd.read_csv(data_path("rfm_scores.csv"))
+coh_mat   = pd.read_csv(data_path("cohort_matrix.csv"))
 
 # ── 1. RFM customers flat export ──────────────────────────────
 print("Preparing RFM export...")
@@ -39,7 +60,7 @@ rfm_tableau["segment_rank"] = rfm_tableau["segment"].map(seg_order).fillna(10)
 rfm_tableau["is_champion"]  = (rfm_tableau["segment"] == "Champion").astype(int)
 rfm_tableau["is_at_risk"]   = (rfm_tableau["segment"] == "At-Risk").astype(int)
 
-rfm_tableau.to_csv("data/tableau_rfm_customers.csv", index=False)
+rfm_tableau.to_csv(data_path("tableau_rfm_customers.csv"), index=False)
 print(f"  → {len(rfm_tableau):,} rows")
 
 # ── 2. Cohort retention (long format) ────────────────────────
@@ -60,7 +81,7 @@ retention_long["cohort_month_dt"] = pd.to_datetime(retention_long["cohort_month"
 retention_long["cohort_year"]     = retention_long["cohort_month_dt"].dt.year
 retention_long["cohort_quarter"]  = retention_long["cohort_month_dt"].dt.quarter
 
-retention_long.to_csv("data/tableau_cohort_retention.csv", index=False)
+retention_long.to_csv(data_path("tableau_cohort_retention.csv"), index=False)
 print(f"  → {len(retention_long):,} rows")
 
 # ── 3. Monthly revenue time series ───────────────────────────
@@ -81,7 +102,7 @@ monthly = (
     .reset_index()
     .round(2)
 )
-monthly.to_csv("data/tableau_monthly_revenue.csv", index=False)
+monthly.to_csv(data_path("tableau_monthly_revenue.csv"), index=False)
 print(f"  → {len(monthly):,} rows")
 
 # ── 4. Geographic summary ─────────────────────────────────────
@@ -127,7 +148,7 @@ geo["region"]       = geo["country"].map(region_map).fillna("Other")
 geo["pct_revenue"]  = (geo["total_revenue"] / geo["total_revenue"].sum() * 100).round(2)
 geo["pct_customers"]= (geo["customers"] / geo["customers"].sum() * 100).round(2)
 geo = geo.sort_values("total_revenue", ascending=False)
-geo.to_csv("data/tableau_geo_summary.csv", index=False)
+geo.to_csv(data_path("tableau_geo_summary.csv"), index=False)
 print(f"  → {len(geo):,} rows (countries)")
 
 print("\nAll Tableau extracts saved. ✓")
