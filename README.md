@@ -1,6 +1,6 @@
 # E-Commerce Customer Segmentation & Retention Analysis
 
-![pipeline](https://github.com/rishiithaa/ecommerce-segmentation/actions/workflows/pipeline.yml/badge.svg)
+![pipeline](https://github.com/Rishiithaa/ecommerce-segmentation/actions/workflows/pipeline.yml/badge.svg)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.12-blue)
 
@@ -63,7 +63,7 @@ ecommerce-segmentation/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourusername/ecommerce-segmentation.git
+git clone https://github.com/Rishiithaa/ecommerce-segmentation.git
 cd ecommerce-segmentation
 ```
 
